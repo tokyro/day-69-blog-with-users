@@ -10,7 +10,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL
 from datetime import date
 from sqlalchemy.orm import relationship
-from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm, PasswordChange
 from random import randint
 from functools import wraps
 import bleach
@@ -285,24 +285,25 @@ def contact():
     return render_template("contact.html")
 
 # needs PasswordChange form added still
-# @app.route('/passwd_change_for_admin', methods=['POST', 'GET'])
-# @login_required
-# @admin_only
-# def passwd_change_for_admin():
-#     change_admin_password_form = PasswordChange()
-#     admin_object = User.query.filter_by(id=1).first()
-#     if request.method == 'POST':
-#         if change_admin_password_form.validate_on_submit():
-#             new_password = change_admin_password_form.password.data
-#             confirm_new_password = change_admin_password_form.confirm_password.data
-#             if new_password == confirm_new_password:
-#                 admin_object.password = generate_password_hash(new_password, method='pbkdf2:sha256',
-#                                                                salt_length=11)
-#                 db.session.commit()
-#                 flash('Your password had been changed successfully!', 'password change message')
-#                 return redirect(url_for('get_all_posts'))
-#     return render_template('password_change.html', change_admin_password_form=change_admin_password_form)
-#
+@app.route('/passwd_change_for_admin', methods=['POST', 'GET'])
+@login_required
+@admin_only
+def passwd_change_for_admin():
+    passwd_chg_form = PasswordChange()
+    admin_object = User.query.filter_by(id=1).first()
+    if request.method == 'POST':
+        if passwd_chg_form.validate_on_submit():
+            new_password = request.form.get('password')
+            confirm_new_password = request.form.get('confirm_password')
+            print(new_password)
+            if new_password == confirm_new_password:
+                admin_object.password = generate_password_hash(new_password, method='pbkdf2:sha3_512:100000',
+                                                               salt_length=randint(16, 32))
+                db.session.commit()
+                flash('Your password had been changed successfully!', 'password change message')
+                return redirect(url_for('get_all_posts'))
+    return render_template('password_change.html', form=passwd_chg_form)
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
